@@ -22,7 +22,7 @@
     
     
     AVCaptureVideoPreviewLayer *_playerLayer;
-    BOOL _isCapture;
+    BOOL _isWriter;
     NSURL *_fileUrl;
     
 }
@@ -53,6 +53,7 @@
     btn.center = self.view.center;
     [btn addTarget:self action:@selector(switchBtn:) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:btn];
+    [_captureSesstion startRunning];
 }
 
 - (void)switchBtn:(UIButton *)btn
@@ -60,12 +61,12 @@
     btn.selected = !btn.selected;
     if (btn.selected)
     {
-        _isCapture = YES;
-        [_captureSesstion startRunning];
+        _isWriter = YES;
+        
     }
     else
     {
-        _isCapture = NO;
+        _isWriter = NO;
     }
     
 }
@@ -74,39 +75,39 @@
 ///采集回调
 - (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection
 {
-  
     CMTime time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer);
-    if (_writer.status == AVAssetWriterStatusUnknown && captureOutput == _vOutput
-        ) {
-        [_writer startWriting];
-        [_writer startSessionAtSourceTime:time];
-
-    }
-    
-    
-    if (_writer.status == AVAssetWriterStatusWriting) {
-        
-        if (captureOutput == _vOutput) {
-            NSLog(@"视频");
-            if (_vWriterInput && [_vWriterInput isReadyForMoreMediaData]) {
-                [_vWriterInput appendSampleBuffer:sampleBuffer];
-            }
+    if (_isWriter) {
+       
+        if (_writer.status == AVAssetWriterStatusUnknown && captureOutput == _vOutput
+            ) {
+            [_writer startWriting];
+            [_writer startSessionAtSourceTime:time];
             
-            
-            
-            
-        } else {
-            NSLog(@"音频");
-            if (_aWriterInput && [_aWriterInput isReadyForMoreMediaData]) {
-                [_aWriterInput appendSampleBuffer:sampleBuffer];
-            }
         }
         
+        
+        if (_writer.status == AVAssetWriterStatusWriting) {
+            
+            if (captureOutput == _vOutput) {
+                NSLog(@"视频");
+                if (_vWriterInput && [_vWriterInput isReadyForMoreMediaData]) {
+                    [_vWriterInput appendSampleBuffer:sampleBuffer];
+                }
+                
+                
+                
+                
+            } else {
+                NSLog(@"音频");
+                if (_aWriterInput && [_aWriterInput isReadyForMoreMediaData]) {
+                    [_aWriterInput appendSampleBuffer:sampleBuffer];
+                }
+            }
+            
+        }
     }
     
-    
-    
-    if (!_isCapture && _writer.status == AVAssetWriterStatusWriting) {
+    if (!_isWriter && _writer.status == AVAssetWriterStatusWriting) {
         [_captureSesstion stopRunning];
         [_writer endSessionAtSourceTime:time];
         [_writer finishWritingWithCompletionHandler:^{
