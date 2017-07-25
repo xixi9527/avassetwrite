@@ -9,6 +9,7 @@
 #import "ViewController.h"
 #import <AVFoundation/AVFoundation.h>
 #import "NSString+CurrentTimes.h"
+#import <AssetsLibrary/AssetsLibrary.h>
 
 @interface ViewController ()<AVCaptureAudioDataOutputSampleBufferDelegate,AVCaptureVideoDataOutputSampleBufferDelegate>
 {
@@ -18,6 +19,11 @@
     AVAssetWriter *_writer;
     AVAssetWriterInput *_aWriterInput;
     AVAssetWriterInput *_vWriterInput;
+    
+    
+    AVCaptureVideoPreviewLayer *_playerLayer;
+    BOOL _isCapture;
+    NSURL *_fileUrl;
     
 }
 @end
@@ -35,34 +41,86 @@
     
     [self setAVAsset];//写mp4的
  
+    [self addSwtich];
+}
+
+- (void)addSwtich
+{
+    UIButton *btn = [UIButton buttonWithType:UIButtonTypeSystem];
+    [btn setTitle:@"开始" forState:UIControlStateNormal];
+    [btn setTitle:@"结束" forState:UIControlStateSelected];
+    btn.bounds = CGRectMake(0, 0, 40, 30);
+    btn.center = self.view.center;
+    [btn addTarget:self action:@selector(switchBtn:) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:btn];
+}
+
+- (void)switchBtn:(UIButton *)btn
+{
+    btn.selected = !btn.selected;
+    if (btn.selected)
+    {
+        _isCapture = YES;
+        [_captureSesstion startRunning];
+    }
+    else
+    {
+        _isCapture = NO;
+    }
     
 }
+
 
 ///采集回调
 - (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection
 {
-    static NSInteger offset = 0;
-    
-    if (_writer.status == AVAssetWriterStatusUnknown) {
-        [_writer startWriting];
-        [_writer startSessionAtSourceTime:CMTimeMake(0, 0)];
-       offset = CMSampleBufferGetPresentationTimeStamp(sampleBuffer).value;
-    }
-    
-    
-    if (captureOutput == _vOutput) {
-        NSLog(@"视频");
-    } else {
-        NSLog(@"音频");
-    }
-    
-    
-    
-    
-    
-    
+  
     CMTime time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer);
-    NSLog(@"%lld",time.value / time.timescale);
+    if (_writer.status == AVAssetWriterStatusUnknown && captureOutput == _vOutput
+        ) {
+        [_writer startWriting];
+        [_writer startSessionAtSourceTime:time];
+
+    }
+    
+    
+    if (_writer.status == AVAssetWriterStatusWriting) {
+        
+        if (captureOutput == _vOutput) {
+            NSLog(@"视频");
+            if (_vWriterInput && [_vWriterInput isReadyForMoreMediaData]) {
+                [_vWriterInput appendSampleBuffer:sampleBuffer];
+            }
+            
+            
+            
+            
+        } else {
+            NSLog(@"音频");
+            if (_aWriterInput && [_aWriterInput isReadyForMoreMediaData]) {
+                [_aWriterInput appendSampleBuffer:sampleBuffer];
+            }
+        }
+        
+    }
+    
+    
+    
+    if (!_isCapture && _writer.status == AVAssetWriterStatusWriting) {
+        [_captureSesstion stopRunning];
+        [_writer endSessionAtSourceTime:time];
+        [_writer finishWritingWithCompletionHandler:^{
+            NSLog(@"录制完成");
+            ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];
+            [library writeVideoAtPathToSavedPhotosAlbum:_fileUrl completionBlock:^(NSURL *assetURL, NSError *error) {
+                if (error == noErr) {
+                    NSLog(@"保存成功  : %@",assetURL);
+                } else {
+                    NSLog(@"保存失败");
+                }
+            }];
+        }];
+    }
     
     
 }
@@ -73,8 +131,9 @@
     //    NSLog(@"mp4 path :%@",path);
     
     
-    NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"Documents/%@.mp4",[NSString getCurrentTime]]];
-    _writer = [[AVAssetWriter alloc] initWithURL:[NSURL fileURLWithPath:path] fileType:AVFileTypeMPEG4 error:nil];
+    NSString * path = [NSHomeDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"Documents/%@.mp4",[NSString getCurrentTime]]];
+    _fileUrl = [NSURL fileURLWithPath:path];
+    _writer = [[AVAssetWriter alloc] initWithURL:_fileUrl fileType:AVFileTypeMPEG4 error:nil];
     
     
     NSDictionary *audioSettings = [NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:kAudioFormatMPEG4AAC],AVFormatIDKey,[NSNumber numberWithInt:48000],AVSampleRateKey,[NSNumber numberWithInt:1],AVNumberOfChannelsKey,nil];
@@ -166,12 +225,15 @@
     {
         NSLog(@"video output add fail");
     }
+    
+    
+    
+    AVCaptureVideoPreviewLayer *playerLayer = [AVCaptureVideoPreviewLayer layerWithSession:_captureSesstion];
+    playerLayer.frame = self.view.layer.bounds;
+    [self.view.layer addSublayer:playerLayer];
 }
 
-- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
-{
-    [_captureSesstion startRunning];
-}
+
 
 
 
