@@ -11,6 +11,7 @@
 #import "NSString+CurrentTimes.h"
 #import <AssetsLibrary/AssetsLibrary.h>
 
+
 @interface ViewController ()<AVCaptureAudioDataOutputSampleBufferDelegate,AVCaptureVideoDataOutputSampleBufferDelegate>
 {
     AVCaptureSession *_captureSesstion;
@@ -19,6 +20,10 @@
     AVAssetWriter *_writer;
     AVAssetWriterInput *_aWriterInput;
     AVAssetWriterInput *_vWriterInput;
+    
+    AVAssetWriterInputPixelBufferAdaptor *_adaptor;
+    
+    
     
     
     AVCaptureVideoPreviewLayer *_playerLayer;
@@ -39,8 +44,8 @@
     
     [self setCapture];//音视频
     
+    
     [self setAVAsset];//写mp4的
- 
     [self addSwtich];
 }
 
@@ -78,8 +83,11 @@
     CMTime time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer);
     if (_isWriter) {
        
-        if (_writer.status == AVAssetWriterStatusUnknown && captureOutput == _vOutput
-            ) {
+        
+        //开始录制
+        if (_writer.status == AVAssetWriterStatusUnknown && captureOutput == _vOutput)
+        {
+            
             [_writer startWriting];
             [_writer startSessionAtSourceTime:time];
             
@@ -91,12 +99,11 @@
             if (captureOutput == _vOutput) {
                 NSLog(@"视频");
                 if (_vWriterInput && [_vWriterInput isReadyForMoreMediaData]) {
-                    [_vWriterInput appendSampleBuffer:sampleBuffer];
+//                    [_vWriterInput appendSampleBuffer:sampleBuffer];
+                    CVImageBufferRef pix;
+                    pix = CMSampleBufferGetImageBuffer(sampleBuffer);
+                    [_adaptor appendPixelBuffer:pix withPresentationTime:time];   
                 }
-                
-                
-                
-                
             } else {
                 NSLog(@"音频");
                 if (_aWriterInput && [_aWriterInput isReadyForMoreMediaData]) {
@@ -105,25 +112,28 @@
             }
             
         }
-    }
-    
-    if (!_isWriter && _writer.status == AVAssetWriterStatusWriting) {
-        [_captureSesstion stopRunning];
-        [_writer endSessionAtSourceTime:time];
-        [_writer finishWritingWithCompletionHandler:^{
-            NSLog(@"录制完成");
-            ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];
-            [library writeVideoAtPathToSavedPhotosAlbum:_fileUrl completionBlock:^(NSURL *assetURL, NSError *error) {
-                if (error == noErr) {
-                    NSLog(@"保存成功  : %@",assetURL);
-                } else {
-                    NSLog(@"保存失败");
-                }
+        
+    } else {//结束录制
+        if (_writer.status == AVAssetWriterStatusWriting) {
+            
+            [_writer endSessionAtSourceTime:time];
+            [_captureSesstion stopRunning];
+            [_writer finishWritingWithCompletionHandler:^{
+                NSLog(@"录制完成");
+                ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];
+                [library writeVideoAtPathToSavedPhotosAlbum:_fileUrl completionBlock:^(NSURL *assetURL, NSError *error) {
+                    if (error == noErr) {
+                        NSLog(@"保存成功  : %@",assetURL);
+                    } else {
+                        NSLog(@"保存失败");
+                    }
+                    
+                }];
             }];
-        }];
+            
+        }
+
     }
-    
-    
 }
 
 - (void)setAVAsset
@@ -163,8 +173,22 @@
         NSLog(@"aWriter 添加失败");
     }
     
+    NSDictionary *pixelBufferOptions = [[NSDictionary alloc] initWithObjectsAndKeys:
+                                        [NSNumber numberWithInt:kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange], kCVPixelBufferPixelFormatTypeKey,nil];
 
+    _adaptor = [AVAssetWriterInputPixelBufferAdaptor assetWriterInputPixelBufferAdaptorWithAssetWriterInput:_vWriterInput sourcePixelBufferAttributes:pixelBufferOptions];
+    
+    
 }
+
+
+
+
+
+
+
+
+
 
 //采集设置
 - (void)setCapture
