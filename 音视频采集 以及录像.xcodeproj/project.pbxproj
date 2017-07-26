@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		BF03340B1F27225E00CDF390 /* MSImageMovieEncoder.m in Sources */ = {isa = PBXBuildFile; fileRef = BF03340A1F27225E00CDF390 /* MSImageMovieEncoder.m */; };
+		BF993D811F2826B100C1AD44 /* PQMP4Writer.m in Sources */ = {isa = PBXBuildFile; fileRef = BF993D801F2826B100C1AD44 /* PQMP4Writer.m */; };
 		D99202201F26457800A36581 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D992021F1F26457800A36581 /* main.m */; };
 		D99202231F26457800A36581 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = D99202221F26457800A36581 /* AppDelegate.m */; };
 		D99202261F26457800A36581 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = D99202251F26457800A36581 /* ViewController.m */; };
@@ -20,6 +21,8 @@
 /* Begin PBXFileReference section */
 		BF0334091F27225E00CDF390 /* MSImageMovieEncoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MSImageMovieEncoder.h; sourceTree = "<group>"; };
 		BF03340A1F27225E00CDF390 /* MSImageMovieEncoder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MSImageMovieEncoder.m; sourceTree = "<group>"; };
+		BF993D7F1F2826B100C1AD44 /* PQMP4Writer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PQMP4Writer.h; sourceTree = "<group>"; };
+		BF993D801F2826B100C1AD44 /* PQMP4Writer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PQMP4Writer.m; sourceTree = "<group>"; };
 		D992021B1F26457800A36581 /* 音视频采集 以及录像.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "音视频采集 以及录像.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D992021F1F26457800A36581 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		D99202211F26457800A36581 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -64,6 +67,8 @@
 		D992021D1F26457800A36581 /* 音视频采集 以及录像 */ = {
 			isa = PBXGroup;
 			children = (
+				BF993D7F1F2826B100C1AD44 /* PQMP4Writer.h */,
+				BF993D801F2826B100C1AD44 /* PQMP4Writer.m */,
 				BF0334091F27225E00CDF390 /* MSImageMovieEncoder.h */,
 				BF03340A1F27225E00CDF390 /* MSImageMovieEncoder.m */,
 				D99202211F26457800A36581 /* AppDelegate.h */,
@@ -162,6 +167,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D99202261F26457800A36581 /* ViewController.m in Sources */,
+				BF993D811F2826B100C1AD44 /* PQMP4Writer.m in Sources */,
 				D99202231F26457800A36581 /* AppDelegate.m in Sources */,
 				BF03340B1F27225E00CDF390 /* MSImageMovieEncoder.m in Sources */,
 				D99202371F2652A100A36581 /* NSString+CurrentTimes.m in Sources */,

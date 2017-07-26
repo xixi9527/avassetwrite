@@ -10,6 +10,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import "NSString+CurrentTimes.h"
 #import <AssetsLibrary/AssetsLibrary.h>
+#import "PQMP4Writer.h"
 
 #import <time.h>
 #import <sys/time.h>
@@ -35,6 +36,10 @@
     int64_t startTime;
     int64_t curStamp;
     
+    
+    PQMP4Writer *_pqwriter;
+    
+    
 }
 @end
 
@@ -52,8 +57,12 @@
     [self setCapture];//音视频
     
     
-    [self setAVAsset];//写mp4的
+//    [self setAVAsset];//写mp4的
     [self addSwtich];
+    
+    _pqwriter = [[PQMP4Writer alloc] init];
+    
+    
 }
 
 - (void)addSwtich
@@ -73,90 +82,54 @@
     btn.selected = !btn.selected;
     if (btn.selected)
     {
-        _isWriter = YES;
         
+        _isWriter = YES;
     }
     else
     {
         _isWriter = NO;
+        [_pqwriter endWriterCallBack:^(NSURL *fileUrl) {
+           
+            ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];
+            [library writeVideoAtPathToSavedPhotosAlbum:fileUrl completionBlock:^(NSURL *assetURL, NSError *error) {
+                if (error) {
+                    NSLog(@"%@",error);
+                } else {
+                    NSLog(@"%@ 保存成功到相册",fileUrl);
+                }
+               
+            }];
+        }];
     }
     
 }
 
--(unsigned long)_GetTickCount
-{
-    struct timeval tv;
-    if (gettimeofday(&tv,NULL)!=0) {
-        return 0;
-    }
-    return (tv.tv_sec*1000 + tv.tv_usec/1000);
-}
+
 
 ///采集回调
 - (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection
 {
-//    CMTime time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer);
-    if (!startTime) {
-        startTime = [self _GetTickCount];
-    }
-    curStamp = [self _GetTickCount] - startTime;
-    CMTime time = CMTimeMake(curStamp, 1000);
     
-    if (_isWriter) {
-       
-        
-        //开始录制
-        if (_writer.status == AVAssetWriterStatusUnknown && captureOutput == _vOutput)
-        {
+//    NSLog(@"%@",[NSThread currentThread]);
+    if ( _vOutput == captureOutput) {
+        if (_isWriter) {
             
-            [_writer startWriting];
-            [_writer startSessionAtSourceTime:time];
-            
-        }
-        
-        
-        if (_writer.status == AVAssetWriterStatusWriting) {
-            
-            if (captureOutput == _vOutput) {
-                NSLog(@"视频");
-                if (_vWriterInput && [_vWriterInput isReadyForMoreMediaData]) {
-//                    [_vWriterInput appendSampleBuffer:sampleBuffer];
-                    CVImageBufferRef pix;
-                    pix = CMSampleBufferGetImageBuffer(sampleBuffer);
-                    [_adaptor appendPixelBuffer:pix withPresentationTime:time];
-                }
+            if (!_pqwriter.isWriting) {
+                [_pqwriter startWriterWithSourceTime:CMSampleBufferGetPresentationTimeStamp(sampleBuffer)];
             }
-//                else {
-//                NSLog(@"音频");
-//                if (_aWriterInput && [_aWriterInput isReadyForMoreMediaData]) {
-//                    [_aWriterInput appendSampleBuffer:sampleBuffer];
-//                }
-//            }
-            
+        }
+        if (_pqwriter.isWriting) {
+            [_pqwriter writerVsampleBuffer:sampleBuffer];
+        }
+    } else {
+        if (_isWriter) {
+            if (_pqwriter.isWriting) {
+                [_pqwriter writerAsampleBuffer:sampleBuffer];
+            }
         }
         
-    } else {//结束录制
-        if (_writer.status == AVAssetWriterStatusWriting) {
-            
-//            [_writer endSessionAtSourceTime:time];
-            [_vWriterInput markAsFinished];
-            [_captureSesstion stopRunning];
-            [_writer finishWritingWithCompletionHandler:^{
-                NSLog(@"录制完成");
-                ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];
-                [library writeVideoAtPathToSavedPhotosAlbum:_fileUrl completionBlock:^(NSURL *assetURL, NSError *error) {
-                    if (error == noErr) {
-                        NSLog(@"保存成功  : %@",assetURL);
-                    } else {
-                        NSLog(@"保存失败");
-                    }
-                    
-                }];
-            }];
-            
-        }
-
     }
+    
 }
 
 - (void)setAVAsset

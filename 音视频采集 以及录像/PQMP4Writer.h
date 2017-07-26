@@ -11,10 +11,10 @@
 @interface PQMP4Writer : NSObject
 
 
-/**
- 创建MP4writer实例
- */
-- (instancetype)initWithSavePath:(NSString *)path;
+
+
+
+@property (nonatomic , assign)BOOL isWriting;
 
 
 /**
@@ -37,7 +37,7 @@
 
 
 /**
- sampleBuff 音频数据写入
+ sampleBuff 音频数据写入 
  */
 - (void)writerAsampleBuffer:(CMSampleBufferRef )sampleBuff;
 
@@ -45,7 +45,7 @@
 /**
  结束录制
  */
-- (void)endWriter;
+- (void)endWriterCallBack:(void(^)(NSURL *fileUrl))back;
 
 
 
