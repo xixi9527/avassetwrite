@@ -11,6 +11,8 @@
 #import "NSString+CurrentTimes.h"
 #import <AssetsLibrary/AssetsLibrary.h>
 
+#import <time.h>
+#import <sys/time.h>
 
 @interface ViewController ()<AVCaptureAudioDataOutputSampleBufferDelegate,AVCaptureVideoDataOutputSampleBufferDelegate>
 {
@@ -30,6 +32,9 @@
     BOOL _isWriter;
     NSURL *_fileUrl;
     
+    int64_t startTime;
+    int64_t curStamp;
+    
 }
 @end
 
@@ -41,6 +46,8 @@
     
     
     
+    startTime = 0;
+    curStamp = 0;
     
     [self setCapture];//音视频
     
@@ -76,11 +83,25 @@
     
 }
 
+-(unsigned long)_GetTickCount
+{
+    struct timeval tv;
+    if (gettimeofday(&tv,NULL)!=0) {
+        return 0;
+    }
+    return (tv.tv_sec*1000 + tv.tv_usec/1000);
+}
 
 ///采集回调
 - (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection
 {
-    CMTime time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer);
+//    CMTime time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer);
+    if (!startTime) {
+        startTime = [self _GetTickCount];
+    }
+    curStamp = [self _GetTickCount] - startTime;
+    CMTime time = CMTimeMake(curStamp, 1000);
+    
     if (_isWriter) {
        
         
@@ -102,21 +123,23 @@
 //                    [_vWriterInput appendSampleBuffer:sampleBuffer];
                     CVImageBufferRef pix;
                     pix = CMSampleBufferGetImageBuffer(sampleBuffer);
-                    [_adaptor appendPixelBuffer:pix withPresentationTime:time];   
-                }
-            } else {
-                NSLog(@"音频");
-                if (_aWriterInput && [_aWriterInput isReadyForMoreMediaData]) {
-                    [_aWriterInput appendSampleBuffer:sampleBuffer];
+                    [_adaptor appendPixelBuffer:pix withPresentationTime:time];
                 }
             }
+//                else {
+//                NSLog(@"音频");
+//                if (_aWriterInput && [_aWriterInput isReadyForMoreMediaData]) {
+//                    [_aWriterInput appendSampleBuffer:sampleBuffer];
+//                }
+//            }
             
         }
         
     } else {//结束录制
         if (_writer.status == AVAssetWriterStatusWriting) {
             
-            [_writer endSessionAtSourceTime:time];
+//            [_writer endSessionAtSourceTime:time];
+            [_vWriterInput markAsFinished];
             [_captureSesstion stopRunning];
             [_writer finishWritingWithCompletionHandler:^{
                 NSLog(@"录制完成");
