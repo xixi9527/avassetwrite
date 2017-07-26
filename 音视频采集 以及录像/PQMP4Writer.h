@@ -13,8 +13,7 @@
 
 
 
-
-@property (nonatomic , assign)BOOL isWriting;
+@property (nonatomic , assign, readonly)BOOL isWriting;
 
 
 /**

@@ -119,7 +119,8 @@
             }
         }
         if (_pqwriter.isWriting) {
-            [_pqwriter writerVsampleBuffer:sampleBuffer];
+            CVPixelBufferRef pixe = CMSampleBufferGetImageBuffer(sampleBuffer);
+            [_pqwriter writerPixeBuffer:pixe andStampTime:CMSampleBufferGetPresentationTimeStamp(sampleBuffer)];
         }
     } else {
         if (_isWriter) {

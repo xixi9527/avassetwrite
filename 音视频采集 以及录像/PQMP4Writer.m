@@ -115,13 +115,13 @@
 - (void)writerPixeBuffer:(CVPixelBufferRef)pixe andStampTime:(CMTime)time
 {
     dispatch_sync(_writerQueue, ^{
-        if ([_vWriterInput isReadyForMoreMediaData] && _writer.startWriting == AVAssetWriterStatusWriting) {
+        if ([_vWriterInput isReadyForMoreMediaData] && _writer.status == AVAssetWriterStatusWriting) {
             if (![_adaptor appendPixelBuffer:pixe withPresentationTime:time]) {
                 NSLog(@"video samplebuff 添加失败");
             }
             
         }
-        CVPixelBufferRelease(pixe);
+        
     });
     _endTime = time;
 }
