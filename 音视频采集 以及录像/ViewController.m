@@ -38,6 +38,7 @@
     
     
     PQMP4Writer *_pqwriter;
+    BOOL _audio;
     
     
 }
@@ -55,13 +56,13 @@
     curStamp = 0;
     
     [self setCapture];//音视频
-    
+    [_captureSesstion startRunning];
     
 //    [self setAVAsset];//写mp4的
     [self addSwtich];
     
     _pqwriter = [[PQMP4Writer alloc] init];
-    
+    _audio = YES;
     
 }
 
@@ -74,7 +75,26 @@
     btn.center = self.view.center;
     [btn addTarget:self action:@selector(switchBtn:) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:btn];
-    [_captureSesstion startRunning];
+    
+    
+    
+    
+    
+    UIButton *btn2 = [UIButton buttonWithType:UIButtonTypeSystem];
+    [btn2 setTitle:@"声音状态: 开" forState:UIControlStateNormal];
+    [btn2 setTitle:@"声音状态: 关" forState:UIControlStateSelected];
+    
+    btn2.bounds = CGRectMake(0, 0, 100, 30);
+    btn2.center = CGPointMake(self.view.bounds.size.width/2, self.view.bounds.size.height/2+50);
+    [btn2 addTarget:self action:@selector(audioSwitch:) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:btn2];
+    
+}
+
+- (void)audioSwitch:(UIButton *)btn
+{
+    btn.selected = !btn.selected;
+    _audio = !_audio;
 }
 
 - (void)switchBtn:(UIButton *)btn
@@ -113,19 +133,38 @@
 //    NSLog(@"%@",[NSThread currentThread]);
     if ( _vOutput == captureOutput) {
         if (_isWriter) {
-            
             if (!_pqwriter.isWriting) {
                 [_pqwriter startWriterWithSourceTime:CMSampleBufferGetPresentationTimeStamp(sampleBuffer)];
             }
         }
         if (_pqwriter.isWriting) {
-            CVPixelBufferRef pixe = CMSampleBufferGetImageBuffer(sampleBuffer);
-            [_pqwriter writerPixeBuffer:pixe andStampTime:CMSampleBufferGetPresentationTimeStamp(sampleBuffer)];
+            [_pqwriter writerVsampleBuffer:sampleBuffer];
         }
     } else {
+        
         if (_isWriter) {
             if (_pqwriter.isWriting) {
-                [_pqwriter writerAsampleBuffer:sampleBuffer];
+                if (!_audio) {
+                    CMItemCount numSamples = CMSampleBufferGetNumSamples(sampleBuffer);
+                    NSUInteger channelIndex = 0;
+                    
+                    CMBlockBufferRef audioBlockBuffer = CMSampleBufferGetDataBuffer(sampleBuffer);
+                    size_t audioBlockBufferOffset = (channelIndex * numSamples * sizeof(SInt16));
+                    size_t lengthAtOffset = 0;
+                    size_t totalLength = 0;
+                    SInt16 *samples = NULL;
+                    CMBlockBufferGetDataPointer(audioBlockBuffer, audioBlockBufferOffset, &lengthAtOffset, &totalLength, (char **)(&samples));
+                    
+                    for (NSInteger i=0; i<numSamples; i++) {
+                        samples[i] = (SInt16)0;
+                    }
+                    
+                   
+                    
+                }
+                    [_pqwriter writerAsampleBuffer:sampleBuffer];
+
+        
             }
         }
         

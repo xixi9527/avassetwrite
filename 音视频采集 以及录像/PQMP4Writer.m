@@ -30,6 +30,7 @@
         _writerQueue = dispatch_queue_create("writerQueue", DISPATCH_QUEUE_SERIAL);
     }
     return self;
+    
 }
 
 - (BOOL)startWriterWithSourceTime:(CMTime)starTime
@@ -51,6 +52,8 @@
     if ([_writer canAddInput:_vWriterInput]) {
         [_writer addInput:_vWriterInput];
         _vWriterInput.expectsMediaDataInRealTime = YES;
+        _vWriterInput.performsMultiPassEncodingIfSupported = YES;
+        
     }
     else
     {
@@ -61,6 +64,8 @@
     if ([_writer canAddInput:_aWriterInput]) {
         [_writer addInput:_aWriterInput];
         _aWriterInput.expectsMediaDataInRealTime = YES;
+        _aWriterInput.performsMultiPassEncodingIfSupported = YES;
+        
     }
     else
     {
@@ -87,9 +92,12 @@
 {
     dispatch_sync(_writerQueue, ^{
         if ([_aWriterInput isReadyForMoreMediaData] && _writer.status == AVAssetWriterStatusWriting) {
+            
             if (![_aWriterInput appendSampleBuffer:sampleBuff]) {
                 NSLog(@"audio samplebuff 添加失败");
+                
             }
+           
         }
         
 //        
@@ -101,9 +109,11 @@
 {
     dispatch_sync(_writerQueue, ^{
         if ([_vWriterInput isReadyForMoreMediaData] && _writer.status == AVAssetWriterStatusWriting) {
+            
             if (![_vWriterInput appendSampleBuffer:sampleBuff]) {
                 NSLog(@"video samplebuff 添加失败");
             }
+            
         }
         
         _endTime = CMSampleBufferGetPresentationTimeStamp(sampleBuff);
